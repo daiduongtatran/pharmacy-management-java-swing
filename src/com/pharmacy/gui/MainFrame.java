@@ -1,4 +1,4 @@
-package com.pharmacy.Gui;
+package com.pharmacy.gui;
 
 import javax.swing.*;
 import java.awt.*;

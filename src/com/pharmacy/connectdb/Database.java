@@ -1,4 +1,4 @@
-package com.pharmacy.ConnectDB;
+package com.pharmacy.connectdb;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

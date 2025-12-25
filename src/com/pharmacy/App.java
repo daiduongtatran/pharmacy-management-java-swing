@@ -1,7 +1,7 @@
 package com.pharmacy;
 
-import com.pharmacy.ConnectDB.Database;
-import com.pharmacy.Gui.MainFrame;
+import com.pharmacy.gui.LoginFrame;
+import com.pharmacy.connectdb.Database;
 import javax.swing.JOptionPane;
 
 public class App {
@@ -14,7 +14,7 @@ public class App {
             if (Database.getConnection() != null) {
                 // 2. Nếu OK, mở giao diện chính
                 java.awt.EventQueue.invokeLater(() -> {
-                    new MainFrame().setVisible(true);
+                    new LoginFrame().setVisible(true);
                 });
             } else {
                 JOptionPane.showMessageDialog(null, "Không thể kết nối Database! Vui lòng kiểm tra lại cấu hình.");
