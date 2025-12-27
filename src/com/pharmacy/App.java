@@ -7,6 +7,7 @@ import javax.swing.JOptionPane;
 public class App {
     public static void main(String[] args) {
         //  kết nối Database
+        com.pharmacy.connectdb.Database.getInstance().connect();
         try {
             Database.getInstance().connect();
 
