@@ -1,9 +1,9 @@
 <component name="libraryTable">
-  <library name="java">
+  <library name="x64">
     <CLASSES />
     <JAVADOC />
     <NATIVE>
-      <root url="file://$PROJECT_DIR$/../.." />
+      <root url="file://$PROJECT_DIR$/../../../Java/sqljdbc_13.2/enu/auth/x64" />
     </NATIVE>
     <SOURCES />
   </library>
