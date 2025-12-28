@@ -1,6 +1,7 @@
 package com.pharmacy.gui;
 
 import com.pharmacy.service.ThongKeService;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -31,12 +32,17 @@ public class MainFrame extends JFrame {
     private List<JButton> menuButtons = new ArrayList<>();
 
     // --- CÁC LABEL & TABLE (DASHBOARD) ---
+    private JLabel lblSapHetHangValue;
+    private JLabel lblHetHanValue;
     private JLabel lblDoanhThuValue;
     private JLabel lblDonHangValue;
     private JTable tblThuoc;
     private DefaultTableModel tableModel;
 
     private ThongKeService tkService = new ThongKeService();
+    private ProductFrame productPanel;
+    private POSPanel posPanel;
+    private ImportFrame nhapHangPanel;
 
     public MainFrame() {
         initUI();
@@ -57,9 +63,14 @@ public class MainFrame extends JFrame {
         cardLayout = new CardLayout();
         pnlContentArea = new JPanel(cardLayout);
 
+        productPanel = new ProductFrame();
+        posPanel = new POSPanel();
+        nhapHangPanel = new ImportFrame();
         // Thêm các màn hình con vào CardLayout
         pnlContentArea.add(createDashboardPanel(), "TongQuan");
-        pnlContentArea.add(new ProductFrame(), "SanPham");
+        pnlContentArea.add(productPanel, "SanPham"); // Dùng đúng biến này
+        pnlContentArea.add(posPanel, "POS");
+        pnlContentArea.add(nhapHangPanel, "NhapHang");
 
         add(pnlContentArea, BorderLayout.CENTER);
     }
@@ -80,13 +91,14 @@ public class MainFrame extends JFrame {
         pnlMenu.setBackground(COLOR_SECONDARY);
         pnlMenu.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Tạo các nút menu và thêm vào danh sách quản lý
+        // cac nut me n u
         JButton btnTongQuan = createMenuItem("🏠   Tổng quan", "TongQuan", true);
         JButton btnSanPham = createMenuItem("💊   Sản phẩm & Kho", "SanPham", false);
-
+        JButton btnPOS = createMenuItem("🛒   Bán hàng (POS)", "POS", false);
+        // sap xep bang tu tren xuong
         pnlMenu.add(btnTongQuan);
         pnlMenu.add(btnSanPham);
-        pnlMenu.add(createMenuItem("🛒   Bán hàng (POS)", "POS", false));
+        pnlMenu.add(btnPOS);
         pnlMenu.add(createMenuItem("👥   Khách hàng", "KhachHang", false));
         pnlMenu.add(createMenuItem("🚚   Nhập hàng", "NhapHang", false));
         pnlMenu.add(createMenuItem("📊   Báo cáo", "BaoCao", false));
@@ -109,8 +121,25 @@ public class MainFrame extends JFrame {
 
         // Sự kiện Click chuyển trang và Highlight
         btn.addActionListener(e -> {
+
             cardLayout.show(pnlContentArea, cardName);
             updateMenuHighlight(btn);
+
+            // 2. LOGIC LÀM MỚI DỮ LIỆU KHI CHUYỂN TRANG
+            // KIỂM TRA VÀ CẬP NHẬT:
+            if (cardName.equals("TongQuan")) {
+                loadDataFromDB(); // Cập nhật Dashboard
+            } else if (cardName.equals("SanPham")) {
+                // Lúc này productPanel đã có giá trị, lệnh này mới chạy được
+                if (productPanel != null) {
+                    productPanel.loadData();
+                }
+            } else if (cardName.equals("NhapHang")) {
+                // Gọi hàm reset để chuẩn bị cho một phiếu nhập mới
+                if (nhapHangPanel != null) {
+                    nhapHangPanel.resetTable();
+                }
+            }
         });
 
         // Hiệu ứng Hover di chuột
@@ -119,6 +148,7 @@ public class MainFrame extends JFrame {
                 btn.setBackground(COLOR_PRIMARY.brighter());
                 btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
             }
+
             public void mouseExited(java.awt.event.MouseEvent e) {
                 // Nếu nút đang được active (font đậm) thì giữ màu primary, ngược lại về màu tối
                 if (btn.getFont().equals(FONT_BOLD)) {
@@ -174,19 +204,25 @@ public class MainFrame extends JFrame {
 
         lblDoanhThuValue = new JLabel("0 đ");
         lblDonHangValue = new JLabel("0 Đơn");
+        lblSapHetHangValue = new JLabel("0 Sản phẩm");
+        lblHetHanValue = new JLabel("0 Sản phẩm");
 
         pnlCards.add(createCard("DOANH THU", lblDoanhThuValue, COLOR_PRIMARY, "💰"));
         pnlCards.add(createCard("ĐƠN HÀNG", lblDonHangValue, new Color(41, 128, 185), "🧾"));
-        pnlCards.add(createCard("SẮP HẾT HÀNG", new JLabel("12 Sản phẩm"), new Color(243, 156, 18), "⚠️"));
-        pnlCards.add(createCard("HẾT HẠN", new JLabel("05 Sản phẩm"), new Color(231, 76, 60), "❌"));
+        pnlCards.add(createCard("SẮP HẾT HÀNG", lblSapHetHangValue, new Color(243, 156, 18), "⚠️"));
+        pnlCards.add(createCard("HẾT HẠN", lblHetHanValue, new Color(231, 76, 60), "❌"));
 
         // Table
-        JLabel lblTableTitle = new JLabel("Danh sách thuốc cần xử lý gấp");
+        JLabel lblTableTitle = new JLabel("Danh sách thuốc và các thuốc cần xử lý", SwingConstants.CENTER); // Thêm SwingConstants.CENTER
         lblTableTitle.setFont(FONT_BOLD);
+        lblTableTitle.setAlignmentX(Component.CENTER_ALIGNMENT); // Đảm bảo căn giữa trong BoxLayout
         lblTableTitle.setBorder(new EmptyBorder(20, 0, 10, 0));
 
+        // Để JLabel chiếm hết chiều ngang và căn giữa chữ bên trong:
+        lblTableTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, lblTableTitle.getPreferredSize().height));
+
         pnlBody.add(pnlCards);
-        pnlBody.add(lblTableTitle);
+        pnlBody.add(lblTableTitle); // Bây giờ nó sẽ nằm ở giữa
         pnlBody.add(createStyledTable());
 
         pnlMain.add(pnlHeader, BorderLayout.NORTH);
@@ -224,7 +260,7 @@ public class MainFrame extends JFrame {
     }
 
     private JScrollPane createStyledTable() {
-        String[] columns = {"Mã Thuốc", "Tên Thuốc", "Hoạt Chất", "Đơn Vị", "Tồn Kho", "Hạn Dùng", "Trạng Thái"};
+        String[] columns = {"Mã SP", "Tên Thuốc", "Loại", "Đơn Vị", "Tồn Kho", "Hạn Dùng", "Trạng Thái"};
         tableModel = new DefaultTableModel(columns, 0);
         tblThuoc = new JTable(tableModel);
         tblThuoc.setRowHeight(30);
@@ -239,30 +275,55 @@ public class MainFrame extends JFrame {
         return new JScrollPane(tblThuoc);
     }
 
-    private void loadDataFromDB() {
+    public void loadDataFromDB() {
         if (tkService == null) tkService = new ThongKeService();
         try {
             DecimalFormat df = new DecimalFormat("#,###");
+            int currentYear = 2025;
 
-            // 1. Lấy dữ liệu từ Service
-            double doanhThu = tkService.getTongDoanhThu();
-            int soDonHang = tkService.getSoDonHang();
+            // Khởi tạo các biến đếm
+            int countSapHetHang = 0;
+            int countHetHan = 0;
 
-            // 2. Cập nhật lên giao diện Dashboard
-            lblDoanhThuValue.setText(df.format(doanhThu) + " đ");
-            lblDonHangValue.setText(soDonHang + " Đơn");
+            lblDoanhThuValue.setText(df.format(tkService.getTongDoanhThu()) + " đ");
+            lblDonHangValue.setText(tkService.getSoDonHang() + " Đơn");
 
-            // 3. Load bảng thuốc (Nếu bạn muốn bảng này hiện danh sách thuốc, hãy dùng SQL bảng SanPham)
             tableModel.setRowCount(0);
-            // Lưu ý: Nếu muốn bảng hiện thuốc, SQL trong getDanhSachThuoc() phải trỏ vào bảng SanPham
             ResultSet rs = tkService.getDanhSachThuoc();
+
             if (rs != null) {
                 while (rs.next()) {
-                    // Thêm hàng vào bảng tableModel
+                    int ma = rs.getInt("MaSP");
+                    String ten = rs.getString("TenSP");
+                    String loai = rs.getString("LoaiSP");
+                    String donVi = rs.getString("DonVi");
+                    int tonKho = rs.getInt("TonKho");
+                    int hanDung = rs.getInt("HanDung");
+
+                    String trangThai = "Bình thường";
+
+                    // Logic đếm và phân loại
+                    if (tonKho < 100) { // Giả sử dưới 100 là sắp hết
+                        trangThai = "Sắp hết hàng";
+                        countSapHetHang++; // Tăng biến đếm
+                    }
+
+                    if (hanDung <= currentYear) {
+                        trangThai = "Cận/Hết hạn";
+                        countHetHan++; // Tăng biến đếm
+                    }
+
+                    tableModel.addRow(new Object[]{ma, ten, loai, donVi, tonKho, hanDung, trangThai});
                 }
+
+                // CẬP NHẬT DỮ LIỆU LÊN DASHBOARD SAU KHI ĐẾM XONG
+                lblSapHetHangValue.setText(String.format("%02d Sản phẩm", countSapHetHang));
+                lblHetHanValue.setText(String.format("%02d Sản phẩm", countHetHan));
+
+                rs.close();
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi nạp dữ liệu Dashboard: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
