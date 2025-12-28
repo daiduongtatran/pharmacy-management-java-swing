@@ -47,15 +47,14 @@ public class ThongKeService {
     // HOẶC dùng mô hình lấy dữ liệu ra Object/Vector.
 
     public ResultSet getDanhSachThuoc() {
-        Connection conn = null;
         try {
-            conn = Database.getConnection(); // Mở kết nối
-            String sql = "SELECT MaSP, TenSP, MaKH, TongTien FROM dbo.SanPham ORDER BY MaSP DESC";
+            //Lấy connection trực tiếp từ lớp Database của bạn
+            Connection conn = Database.getConnection();
+            String sql = "SELECT MaSP, TenSP, LoaiSP, DonVi, TonKho, HanDung FROM SanPham";
             PreparedStatement ps = conn.prepareStatement(sql);
             return ps.executeQuery();
-            // Lưu ý: Kết nối này sẽ vẫn mở để MainFrame đọc dữ liệu.
-            // Sau khi MainFrame đọc xong, nó sẽ tự đóng hoặc chờ Garbage Collector.
         } catch (Exception e) {
+            System.err.println("Lỗi khi lấy danh sách thuốc: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
