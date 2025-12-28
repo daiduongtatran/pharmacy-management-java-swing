@@ -27,6 +27,13 @@ public class Database {
     }
 
     public static Connection getConnection() {
+        try {
+            if (con == null || con.isClosed()) {
+                instance.connect();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return con;
     }
 

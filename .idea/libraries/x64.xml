@@ -3,7 +3,8 @@
     <CLASSES />
     <JAVADOC />
     <NATIVE>
-      <root url="file://$PROJECT_DIR$/../../../Java/sqljdbc_13.2/enu/auth/x64" />
+      <root url="file://$PROJECT_DIR$/../../sqljdbc_13.2/enu/auth/x64" />
+      <root url="file://$PROJECT_DIR$/../.." />
     </NATIVE>
     <SOURCES />
   </library>

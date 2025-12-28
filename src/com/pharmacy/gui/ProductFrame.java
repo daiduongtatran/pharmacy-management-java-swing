@@ -99,7 +99,7 @@ public class ProductFrame extends JPanel {
     }
 
     private JPanel createDetailPanel() {
-        JPanel pnlRight = new JPanel(new BorderLayout());
+        JPanel pnlRight     = new JPanel(new BorderLayout());
         pnlRight.setPreferredSize(new Dimension(300, 0));
         pnlRight.setBackground(Color.WHITE);
         pnlRight.setBorder(BorderFactory.createCompoundBorder(
@@ -160,7 +160,7 @@ public class ProductFrame extends JPanel {
         return btn;
     }
 
-    private void loadData() {
+    public void loadData() {
         try (Connection con = Database.getConnection()) {
             if (con == null) return;
             model.setRowCount(0);
