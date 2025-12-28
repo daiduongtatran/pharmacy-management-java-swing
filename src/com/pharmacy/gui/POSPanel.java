@@ -287,16 +287,20 @@ public class POSPanel extends JPanel {
             if (rsKey.next()) maHD = rsKey.getInt(1);
 
             // Bước 2: Trừ tồn kho & (Nếu muốn) Lưu chi tiết hóa đơn
-            String sqlUpdateKho = "UPDATE SanPham SET TonKho = TonKho - ? WHERE MaSP = ?";
+            String sqlUpdateKho = "UPDATE SanPham SET TonKho = TonKho - ?,HangXuat = HangXuat + ? WHERE MaSP = ?";
             PreparedStatement pstKho = con.prepareStatement(sqlUpdateKho);
 
             for (int i = 0; i < cartModel.getRowCount(); i++) {
                 int maSP = Integer.parseInt(cartModel.getValueAt(i, 0).toString());
                 int soLuong = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
 
-                // Trừ kho
+
+                // Tham số 1: Trừ tồn kho
                 pstKho.setInt(1, soLuong);
-                pstKho.setInt(2, maSP);
+                // Tham số 2: Cộng hàng xuất
+                pstKho.setInt(2, soLuong);
+                // Tham số 3: Mã sản phẩm
+                pstKho.setInt(3, maSP);
                 pstKho.addBatch();
             }
             pstKho.executeBatch(); // Thực thi một loạt lệnh update
