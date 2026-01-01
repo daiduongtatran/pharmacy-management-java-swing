@@ -1,60 +1,61 @@
 package com.pharmacy.service;
 
 import com.pharmacy.connectdb.Database;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class ThongKeService {
 
-    // Hàm 1: Lấy tổng doanh thu
+    // 1. Lấy tổng doanh thu (Hiển thị Dashboard MainFrame)
     public double getTongDoanhThu() {
         double total = 0;
-        String sql = "SELECT SUM(TongTien) FROM dbo.HoaDon";
-
-        // Dùng try-with-resources để tự động đóng kết nối SAU KHI DÙNG XONG trong phạm vi hàm này
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+        try (Connection con = Database.getConnection();
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery("SELECT SUM(TongTien) FROM HoaDon")) {
             if (rs.next()) {
                 total = rs.getDouble(1);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return total;
     }
 
-    // Hàm 2: Lấy số lượng đơn hàng
+    // 2. Lấy số lượng đơn hàng (Hiển thị Dashboard MainFrame)
     public int getSoDonHang() {
         int count = 0;
-        String sql = "SELECT COUNT(MaHD) FROM dbo.HoaDon";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection con = Database.getConnection();
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM HoaDon")) {
             if (rs.next()) {
                 count = rs.getInt(1);
             }
         } catch (Exception e) { e.printStackTrace(); }
         return count;
-
     }
 
-    // Hàm 3: Lấy danh sách hóa đơn (Để đổ vào bảng)
-    // Lưu ý: Hàm trả về ResultSet cần cẩn thận.
-    // Nếu đóng Connection ngay ở đây thì ResultSet sẽ chết theo.
-    // -> Giải pháp: Trả về CachedRowSet hoặc Vector, NHƯNG để nhanh nhất cho bạn lúc này:
-    // Ta sẽ KHÔNG dùng try-with-resources cho Connection ở hàm này, mà để MainFrame quản lý,
-    // HOẶC dùng mô hình lấy dữ liệu ra Object/Vector.
+    // 3. Lấy danh sách chi tiết hóa đơn (Hiển thị ReportPanel)
+    public ResultSet getDanhSachHoaDon() {
+        try {
+            Connection con = Database.getConnection();
+            String sql = "SELECT MaHD, NgayInHoaDon, TongTien, MaKH FROM HoaDon ORDER BY MaHD DESC";
+            PreparedStatement pst = con.prepareStatement(sql);
+            return pst.executeQuery();
+            // Lưu ý: Người gọi hàm này phải chịu trách nhiệm đóng Connection/ResultSet sau khi dùng
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
+    // 4. Lấy danh sách thuốc (Cho Dashboard hiện tại)
     public ResultSet getDanhSachThuoc() {
         try {
-            //Lấy connection trực tiếp từ lớp Database của bạn
-            Connection conn = Database.getConnection();
-            String sql = "SELECT MaSP, TenSP, LoaiSP, DonVi, TonKho, HanDung FROM SanPham";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            return ps.executeQuery();
+            Connection con = Database.getConnection();
+            String sql = "SELECT * FROM SanPham";
+            PreparedStatement pst = con.prepareStatement(sql);
+            return pst.executeQuery();
         } catch (Exception e) {
-            System.err.println("Lỗi khi lấy danh sách thuốc: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

@@ -5,6 +5,7 @@ import com.pharmacy.connectdb.Database;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
@@ -26,7 +27,7 @@ public class POSPanel extends JPanel {
     private JLabel lblTotalMoney;
 
     // --- Data Variables ---
-    private int currentProductId = -1; // ID sản phẩm đang chọn
+    private int currentProductId = -1;
     private double currentPrice = 0;
     private int currentStock = 0;
     private double finalTotal = 0;
@@ -42,20 +43,15 @@ public class POSPanel extends JPanel {
         setBorder(new EmptyBorder(15, 15, 15, 15));
         setBackground(new Color(245, 245, 245));
 
-        // 1. Panel TRÁI: Tìm kiếm và Thông tin sản phẩm
         add(createSelectionPanel(), BorderLayout.WEST);
-
-        // 2. Panel PHẢI: Giỏ hàng và Thanh toán
         add(createCartPanel(), BorderLayout.CENTER);
     }
 
-    // --- KHU VỰC 1: TÌM KIẾM & CHỌN SẢN PHẨM ---
     private JPanel createSelectionPanel() {
         JPanel pnlLeft = new JPanel(new BorderLayout());
         pnlLeft.setPreferredSize(new Dimension(320, 0));
         pnlLeft.setOpaque(false);
 
-        // A. Ô Tìm kiếm
         JPanel pnlSearch = new JPanel(new BorderLayout(5, 5));
         pnlSearch.setBorder(BorderFactory.createTitledBorder(null, "1. Tìm sản phẩm", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, FONT_BOLD, COLOR_PRIMARY));
         pnlSearch.setBackground(Color.WHITE);
@@ -64,7 +60,6 @@ public class POSPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(0, 35));
         JButton btnFind = new JButton("🔍");
 
-        // Sự kiện tìm kiếm (Enter hoặc Click nút)
         txtSearch.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -76,7 +71,6 @@ public class POSPanel extends JPanel {
         pnlSearch.add(txtSearch, BorderLayout.CENTER);
         pnlSearch.add(btnFind, BorderLayout.EAST);
 
-        // B. Thông tin sản phẩm tìm được
         JPanel pnlInfo = new JPanel(new GridLayout(4, 2, 10, 15));
         pnlInfo.setBorder(BorderFactory.createCompoundBorder(
                 new EmptyBorder(20, 0, 0, 0),
@@ -94,14 +88,12 @@ public class POSPanel extends JPanel {
         pnlInfo.add(new JLabel("Tồn kho:"));   pnlInfo.add(lblStock);
         pnlInfo.add(new JLabel("Số lượng mua:")); pnlInfo.add(spnQuantity);
 
-        // C. Nút Thêm vào giỏ
-        btnAddToCart = new JButton("THÊM VÀO GIỎ ⬇");
+        btnAddToCart = new JButton("THÊM VÀO GIỎ ");
         styleButton(btnAddToCart, COLOR_PRIMARY);
         btnAddToCart.setPreferredSize(new Dimension(0, 50));
-        btnAddToCart.setEnabled(false); // Chỉ bật khi tìm thấy thuốc
+        btnAddToCart.setEnabled(false);
         btnAddToCart.addActionListener(e -> addToCart());
 
-        // Gom lại vào panel trái
         JPanel container = new JPanel(new BorderLayout(10, 20));
         container.setOpaque(false);
         container.add(pnlSearch, BorderLayout.NORTH);
@@ -112,12 +104,10 @@ public class POSPanel extends JPanel {
         return pnlLeft;
     }
 
-    // --- KHU VỰC 2: GIỎ HÀNG & THANH TOÁN ---
     private JPanel createCartPanel() {
         JPanel pnlRight = new JPanel(new BorderLayout(10, 10));
         pnlRight.setOpaque(false);
 
-        // A. Bảng giỏ hàng
         String[] headers = {"Mã SP", "Tên Sản Phẩm", "Đơn Giá", "Số Lượng", "Thành Tiền"};
         cartModel = new DefaultTableModel(headers, 0) {
             @Override
@@ -126,6 +116,13 @@ public class POSPanel extends JPanel {
         tblCart = new JTable(cartModel);
         tblCart.setRowHeight(35);
         tblCart.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        // Căn lề giữa cho bảng giỏ hàng
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < tblCart.getColumnCount(); i++) {
+            tblCart.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
 
         JTableHeader header = tblCart.getTableHeader();
         header.setBackground(COLOR_PRIMARY);
@@ -136,24 +133,37 @@ public class POSPanel extends JPanel {
         scroll.setBorder(BorderFactory.createTitledBorder(null, "3. Giỏ hàng", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, FONT_BOLD, COLOR_PRIMARY));
         scroll.getViewport().setBackground(Color.WHITE);
 
-        // B. Khu vực Thanh toán (Dưới cùng)
         JPanel pnlBottom = new JPanel(new BorderLayout(20, 0));
         pnlBottom.setBackground(Color.WHITE);
         pnlBottom.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // Nút xóa dòng chọn
-        btnDelete = new JButton("Xóa dòng chọn");
-        styleButton(btnDelete, COLOR_DANGER);
+        // --- THIẾT KẾ MỚI CHO NÚT XÓA ---
+        btnDelete = new JButton(" Xóa dòng chọn");
+        btnDelete.setFont(new Font("Arial", Font.PLAIN, 13));
+        btnDelete.setFocusPainted(false);
+        btnDelete.setContentAreaFilled(false);
+        btnDelete.setOpaque(true);
+        btnDelete.setBackground(new Color(245, 245, 245));
+        btnDelete.setForeground(new Color(200, 0, 0));
+        btnDelete.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+        btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnDelete.setPreferredSize(new Dimension(150, 40));
+
+        btnDelete.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnDelete.setBackground(new Color(255, 235, 235));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btnDelete.setBackground(new Color(245, 245, 245));
+            }
+        });
         btnDelete.addActionListener(e -> removeFromCart());
 
-        // Tổng tiền
         lblTotalMoney = new JLabel("Tổng: 0 đ");
         lblTotalMoney.setFont(new Font("Arial", Font.BOLD, 26));
         lblTotalMoney.setForeground(COLOR_DANGER);
         lblTotalMoney.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        // Nút Thanh toán
         btnPay = new JButton("THANH TOÁN (LƯU & IN)");
         styleButton(btnPay, COLOR_SUCCESS);
         btnPay.setFont(new Font("Arial", Font.BOLD, 16));
@@ -174,7 +184,6 @@ public class POSPanel extends JPanel {
         return pnlRight;
     }
 
-    // --- LOGIC 1: TÌM SẢN PHẨM ---
     private void searchProduct() {
         String keyword = txtSearch.getText().trim();
         if (keyword.isEmpty()) return;
@@ -196,16 +205,14 @@ public class POSPanel extends JPanel {
                 currentPrice = rs.getDouble("GiaBan");
                 currentStock = rs.getInt("TonKho");
 
-                // Hiển thị lên giao diện
                 lblName.setText("<html><body style='width: 150px'>" + name + "</body></html>");
-                lblPrice.setText(formatMoney(currentPrice));
+                lblPrice.setText(formatMoney(currentPrice) + " đ");
                 lblStock.setText(String.valueOf(currentStock));
                 lblName.setForeground(COLOR_PRIMARY);
 
-                // Kích hoạt nút thêm
                 btnAddToCart.setEnabled(true);
                 spnQuantity.setValue(1);
-                spnQuantity.requestFocus(); // Nhảy vào ô nhập số lượng luôn cho tiện
+                spnQuantity.requestFocus();
             } else {
                 JOptionPane.showMessageDialog(this, "Không tìm thấy sản phẩm!");
                 resetSelection();
@@ -215,29 +222,22 @@ public class POSPanel extends JPanel {
         }
     }
 
-    // --- LOGIC 2: THÊM VÀO GIỎ HÀNG ---
     private void addToCart() {
         int qty = (int) spnQuantity.getValue();
-
-        // 1. Kiểm tra tồn kho
         if (qty > currentStock) {
             JOptionPane.showMessageDialog(this, "Không đủ hàng! Tồn kho chỉ còn: " + currentStock);
             return;
         }
 
-        // 2. Kiểm tra xem sản phẩm đã có trong giỏ chưa
         for (int i = 0; i < cartModel.getRowCount(); i++) {
             int id = Integer.parseInt(cartModel.getValueAt(i, 0).toString());
             if (id == currentProductId) {
-                // Đã có -> Cộng dồn số lượng
                 int oldQty = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
                 int newQty = oldQty + qty;
-
                 if (newQty > currentStock) {
                     JOptionPane.showMessageDialog(this, "Tổng số lượng trong giỏ vượt quá tồn kho!");
                     return;
                 }
-
                 cartModel.setValueAt(newQty, i, 3);
                 cartModel.setValueAt(formatMoney(newQty * currentPrice), i, 4);
                 calculateTotal();
@@ -246,75 +246,61 @@ public class POSPanel extends JPanel {
             }
         }
 
-        // 3. Chưa có -> Thêm dòng mới
         double lineTotal = qty * currentPrice;
         cartModel.addRow(new Object[]{
                 currentProductId,
                 lblName.getText().replaceAll("<[^>]*>", ""),
                 formatMoney(currentPrice),
                 qty,
-                formatMoney(lineTotal) // Lưu dạng chuỗi hiển thị
+                formatMoney(lineTotal)
         });
 
         calculateTotal();
         resetSelection();
-        txtSearch.requestFocus(); // Trả con trỏ về ô tìm kiếm để bán tiếp
+        txtSearch.requestFocus();
     }
 
-    // --- LOGIC 3: THANH TOÁN & TRỪ KHO (TRANSACTION) ---
     private void processPayment() {
-        if (cartModel.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "Giỏ hàng trống!");
-            return;
-        }
-
+        if (cartModel.getRowCount() == 0) return;
         Connection con = null;
         try {
             con = Database.getConnection();
-            con.setAutoCommit(false); // BẮT ĐẦU GIAO DỊCH (Transaction)
+            con.setAutoCommit(false);
 
-            // Bước 1: Tạo Hóa Đơn
-            String sqlHD = "INSERT INTO HoaDon (NgayInHoaDon, TongTien, MaKH) VALUES (?, ?, ?)";
+            String sqlHD = "INSERT INTO HoaDon (NgayInHoaDon, TongTien) VALUES (?, ?)";
             PreparedStatement pstHD = con.prepareStatement(sqlHD, Statement.RETURN_GENERATED_KEYS);
             pstHD.setDate(1, java.sql.Date.valueOf(LocalDate.now()));
             pstHD.setDouble(2, finalTotal);
-            pstHD.setObject(3, null);
             pstHD.executeUpdate();
 
-            // Lấy ID hóa đơn vừa tạo
-            ResultSet rsKey = pstHD.getGeneratedKeys();
-            int maHD = 0;
-            if (rsKey.next()) maHD = rsKey.getInt(1);
+            ResultSet rs = pstHD.getGeneratedKeys();
+            int maHD = rs.next() ? rs.getInt(1) : 0;
 
-            // Bước 2: Trừ tồn kho & (Nếu muốn) Lưu chi tiết hóa đơn
-            String sqlUpdateKho = "UPDATE SanPham SET TonKho = TonKho - ?,HangXuat = HangXuat + ? WHERE MaSP = ?";
-            PreparedStatement pstKho = con.prepareStatement(sqlUpdateKho);
+            String sqlCT = "INSERT INTO ChiTietHoaDon (MaHD, MaSP, SoLuong, DonGia, ThanhTien) VALUES (?,?,?,?,?)";
+            String sqlKho = "UPDATE SanPham SET TonKho = TonKho - ?, HangXuat = HangXuat + ? WHERE MaSP = ?";
+            PreparedStatement pstCT = con.prepareStatement(sqlCT);
+            PreparedStatement pstKho = con.prepareStatement(sqlKho);
 
             for (int i = 0; i < cartModel.getRowCount(); i++) {
-                int maSP = Integer.parseInt(cartModel.getValueAt(i, 0).toString());
-                int soLuong = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
+                int id = (int) cartModel.getValueAt(i, 0);
+                int q = (int) cartModel.getValueAt(i, 3);
+                // Fix lỗi parse tiền khi số lớn (> 1 triệu)
+                double p = Double.parseDouble(cartModel.getValueAt(i, 2).toString().replaceAll("[^0-9]", ""));
+                double sub = Double.parseDouble(cartModel.getValueAt(i, 4).toString().replaceAll("[^0-9]", ""));
 
+                pstCT.setInt(1, maHD); pstCT.setInt(2, id); pstCT.setInt(3, q); pstCT.setDouble(4, p); pstCT.setDouble(5, sub);
+                pstCT.addBatch();
 
-                // Tham số 1: Trừ tồn kho
-                pstKho.setInt(1, soLuong);
-                // Tham số 2: Cộng hàng xuất
-                pstKho.setInt(2, soLuong);
-                // Tham số 3: Mã sản phẩm
-                pstKho.setInt(3, maSP);
+                pstKho.setInt(1, q); pstKho.setInt(2, q); pstKho.setInt(3, id);
                 pstKho.addBatch();
             }
-            pstKho.executeBatch(); // Thực thi một loạt lệnh update
-
-            // Bước 3: Hoàn tất
-            con.commit(); // Lưu vào DB
-            JOptionPane.showMessageDialog(this, "Thanh toán thành công!\nMã Hóa Đơn: " + maHD + "\nTổng tiền: " + lblTotalMoney.getText());
-
-            // Làm mới giao diện
+            pstCT.executeBatch(); pstKho.executeBatch();
+            con.commit();
+            JOptionPane.showMessageDialog(this, "Thanh toán thành công!");
             cartModel.setRowCount(0);
             calculateTotal();
-
         } catch (Exception e) {
-            try { if (con != null) con.rollback(); } catch (Exception ex) {} // Gặp lỗi thì hoàn tác
+            try { if (con != null) con.rollback(); } catch (Exception ex) {}
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi thanh toán: " + e.getMessage());
         } finally {
@@ -322,13 +308,18 @@ public class POSPanel extends JPanel {
         }
     }
 
-    // --- CÁC HÀM PHỤ TRỢ ---
     private void calculateTotal() {
         finalTotal = 0;
         for (int i = 0; i < cartModel.getRowCount(); i++) {
-            // Lấy thành tiền (cần parse lại từ chuỗi định dạng "1,000,000")
-            String sAmount = cartModel.getValueAt(i, 4).toString().replace(",", "").replace(".", "");
-            finalTotal += Double.parseDouble(sAmount);
+            try {
+                // Xóa mọi ký tự không phải số để tránh lỗi parse trên 1 triệu
+                String sAmount = cartModel.getValueAt(i, 4).toString().replaceAll("[^0-9]", "");
+                if (!sAmount.isEmpty()) {
+                    finalTotal += Double.parseDouble(sAmount);
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi tính tiền: " + e.getMessage());
+            }
         }
         lblTotalMoney.setText("Tổng: " + formatMoney(finalTotal) + " đ");
     }
@@ -336,8 +327,15 @@ public class POSPanel extends JPanel {
     private void removeFromCart() {
         int row = tblCart.getSelectedRow();
         if (row != -1) {
-            cartModel.removeRow(row);
-            calculateTotal();
+            String tenSP = cartModel.getValueAt(row, 1).toString();
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Xóa [" + tenSP + "] khỏi giỏ hàng?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                cartModel.removeRow(row);
+                calculateTotal();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sản phẩm cần xóa!");
         }
     }
 

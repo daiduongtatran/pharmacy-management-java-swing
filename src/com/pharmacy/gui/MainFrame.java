@@ -1,7 +1,7 @@
 package com.pharmacy.gui;
 
 import com.pharmacy.service.ThongKeService;
-
+import com.pharmacy.gui.ReportPanel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -38,17 +38,31 @@ public class MainFrame extends JFrame {
     private JLabel lblDonHangValue;
     private JTable tblThuoc;
     private DefaultTableModel tableModel;
-
+    // các biến của trang khác
     private ThongKeService tkService = new ThongKeService();
     private ProductFrame productPanel;
     private POSPanel posPanel;
     private ImportFrame nhapHangPanel;
+    private ReportPanel reportPanel;
 
     public MainFrame() {
         initUI();
         loadDataFromDB();
     }
-
+    private ImageIcon getUtilIcon(String fileName) {
+        try {
+            // Đường dẫn đến thư mục util bạn đã tạo
+            java.net.URL imgURL = getClass().getResource("/com/pharmacy/util/" + fileName);
+            if (imgURL != null) {
+                Image img = new ImageIcon(imgURL).getImage();
+                // Resize icon về cỡ 22x22 để vừa vặn với dòng menu
+                return new ImageIcon(img.getScaledInstance(22, 22, Image.SCALE_SMOOTH));
+            }
+        } catch (Exception e) {
+            System.err.println("Không tìm thấy icon: " + fileName);
+        }
+        return null;
+    }
     private void initUI() {
         setTitle("Quản Lý Nhà Thuốc");
         setSize(1200, 750);
@@ -62,16 +76,17 @@ public class MainFrame extends JFrame {
         // 2. Vùng nội dung chính (Sử dụng CardLayout)
         cardLayout = new CardLayout();
         pnlContentArea = new JPanel(cardLayout);
-
+        // khởi tạo các trang
         productPanel = new ProductFrame();
         posPanel = new POSPanel();
         nhapHangPanel = new ImportFrame();
+        reportPanel = new ReportPanel();
         // Thêm các màn hình con vào CardLayout
         pnlContentArea.add(createDashboardPanel(), "TongQuan");
         pnlContentArea.add(productPanel, "SanPham"); // Dùng đúng biến này
         pnlContentArea.add(posPanel, "POS");
         pnlContentArea.add(nhapHangPanel, "NhapHang");
-
+        pnlContentArea.add(reportPanel, "BaoCao");
         add(pnlContentArea, BorderLayout.CENTER);
     }
 
@@ -92,17 +107,21 @@ public class MainFrame extends JFrame {
         pnlMenu.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // cac nut me n u
-        JButton btnTongQuan = createMenuItem("🏠   Tổng quan", "TongQuan", true);
-        JButton btnSanPham = createMenuItem("💊   Sản phẩm & Kho", "SanPham", false);
-        JButton btnPOS = createMenuItem("🛒   Bán hàng (POS)", "POS", false);
+        JButton btnTongQuan = createMenuItem("  Tổng quan", "TongQuan", true);
+        JButton btnSanPham = createMenuItem("  Sản phẩm & Kho", "SanPham", false);
+        JButton btnPOS = createMenuItem("  Bán hàng (POS)", "POS", false);
+
+
+        // đoạn này th chính sẽ thêm button nhập hàng vào đây
+        JButton btnBaoCao = createMenuItem("  Báo cáo", "BaoCao", false);
+
         // sap xep bang tu tren xuong
         pnlMenu.add(btnTongQuan);
         pnlMenu.add(btnSanPham);
         pnlMenu.add(btnPOS);
-        pnlMenu.add(createMenuItem("👥   Khách hàng", "KhachHang", false));
-        pnlMenu.add(createMenuItem("🚚   Nhập hàng", "NhapHang", false));
-        pnlMenu.add(createMenuItem("📊   Báo cáo", "BaoCao", false));
-        pnlMenu.add(createMenuItem("⚙   Cấu hình", "CauHinh", false));
+        pnlMenu.add(createMenuItem("  Nhập hàng", "NhapHang", false));
+        pnlMenu.add(btnBaoCao);
+        pnlMenu.add(createMenuItem("  Cấu hình", "CauHinh", false));
 
         sidebar.add(pnlMenu, BorderLayout.CENTER);
         return sidebar;
@@ -128,17 +147,14 @@ public class MainFrame extends JFrame {
             // 2. LOGIC LÀM MỚI DỮ LIỆU KHI CHUYỂN TRANG
             // KIỂM TRA VÀ CẬP NHẬT:
             if (cardName.equals("TongQuan")) {
-                loadDataFromDB(); // Cập nhật Dashboard
+                loadDataFromDB(); // Cập nhật Dashboard chính
             } else if (cardName.equals("SanPham")) {
-                // Lúc này productPanel đã có giá trị, lệnh này mới chạy được
-                if (productPanel != null) {
-                    productPanel.loadData();
-                }
+                if (productPanel != null) productPanel.loadData();
             } else if (cardName.equals("NhapHang")) {
-                // Gọi hàm reset để chuẩn bị cho một phiếu nhập mới
-                if (nhapHangPanel != null) {
-                    nhapHangPanel.resetTable();
-                }
+                if (nhapHangPanel != null) nhapHangPanel.resetTable();
+            }
+            else if (cardName.equals("BaoCao")) {
+                if (reportPanel != null) reportPanel.loadData();
             }
         });
 
