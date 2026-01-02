@@ -39,7 +39,6 @@ public class ProductFrame extends JPanel {
         JButton btnAdd = createStyledButton("Nhập hàng", new Color(40, 167, 69));
         JButton btnEdit = createStyledButton("Sửa", new Color(255, 193, 7));
         JButton btnDelete = createStyledButton("Xóa", new Color(220, 53, 69));
-        // Đã xóa nút Làm mới
 
         // Gán sự kiện CRUD
         btnAdd.addActionListener(e -> openProductDialog(null));
@@ -70,11 +69,13 @@ public class ProductFrame extends JPanel {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), title, true);
         dialog.setLayout(new BorderLayout(10, 10));
 
-        JPanel pnlInputs = new JPanel(new GridLayout(6, 2, 10, 10));
+        // [CẬP NHẬT] Tăng lên 7 dòng để chứa thêm Đơn vị
+        JPanel pnlInputs = new JPanel(new GridLayout(7, 2, 10, 10));
         pnlInputs.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         JTextField tfTen = new JTextField();
         JTextField tfLoai = new JTextField();
+        JTextField tfDonVi = new JTextField(); // [MỚI] Ô nhập đơn vị
         JTextField tfGiaN = new JTextField();
         JTextField tfGiaB = new JTextField();
         JTextField tfSoLuong = new JTextField();
@@ -82,26 +83,28 @@ public class ProductFrame extends JPanel {
 
         pnlInputs.add(new JLabel("Tên sản phẩm:")); pnlInputs.add(tfTen);
         pnlInputs.add(new JLabel("Loại sản phẩm:")); pnlInputs.add(tfLoai);
+        pnlInputs.add(new JLabel("Đơn vị tính:"));   pnlInputs.add(tfDonVi); // [MỚI]
         pnlInputs.add(new JLabel("Giá nhập:")); pnlInputs.add(tfGiaN);
         pnlInputs.add(new JLabel("Giá bán:")); pnlInputs.add(tfGiaB);
         pnlInputs.add(new JLabel("Số lượng nhập:")); pnlInputs.add(tfSoLuong);
-        pnlInputs.add(new JLabel("Hạn dùng (ngày/tháng/năm):")); pnlInputs.add(tfHanDung);
+        pnlInputs.add(new JLabel("Hạn dùng (dd/mm/yyyy):")); pnlInputs.add(tfHanDung);
 
         // Nếu là sửa, đổ dữ liệu cũ vào các ô text
+        // LƯU Ý: Thứ tự cột trong model đã thay đổi do thêm cột Đơn vị
         if (rowIndex != null) {
             tfTen.setText(model.getValueAt(rowIndex, 1).toString());
             tfLoai.setText(model.getValueAt(rowIndex, 2).toString());
+            tfDonVi.setText(model.getValueAt(rowIndex, 3).toString()); // [MỚI] Đơn vị ở cột 3
 
-            // --- XỬ LÝ QUAN TRỌNG: Lọc bỏ chữ "đ" và dấu "," để lấy số nguyên ---
-            String giaNhapRaw = model.getValueAt(rowIndex, 3).toString().replaceAll("[^0-9]", "");
-            String giaBanRaw = model.getValueAt(rowIndex, 4).toString().replaceAll("[^0-9]", "");
+            // Lọc bỏ chữ "đ" và dấu ","
+            String giaNhapRaw = model.getValueAt(rowIndex, 4).toString().replaceAll("[^0-9]", "");
+            String giaBanRaw = model.getValueAt(rowIndex, 5).toString().replaceAll("[^0-9]", "");
 
             tfGiaN.setText(giaNhapRaw);
             tfGiaB.setText(giaBanRaw);
-            // ---------------------------------------------------------------------
 
-            tfSoLuong.setText(model.getValueAt(rowIndex, 6).toString());
-            tfHanDung.setText(model.getValueAt(rowIndex, 7).toString());
+            tfSoLuong.setText(model.getValueAt(rowIndex, 7).toString()); // Tồn kho dời sang cột 7
+            tfHanDung.setText(model.getValueAt(rowIndex, 8).toString()); // Hạn dùng dời sang cột 8
         }
 
         JButton btnSave = new JButton("Lưu dữ liệu");
@@ -111,12 +114,13 @@ public class ProductFrame extends JPanel {
 
         btnSave.addActionListener(e -> {
             try {
-                if(tfTen.getText().isEmpty() || tfSoLuong.getText().isEmpty() || tfHanDung.getText().isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đầy đủ thông tin (Tên, SL, Hạn dùng)!");
+                if(tfTen.getText().isEmpty() || tfSoLuong.getText().isEmpty() || tfHanDung.getText().isEmpty() || tfDonVi.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đầy đủ thông tin (Tên, Đơn vị, SL, Hạn dùng)!");
                     return;
                 }
 
-                handleSave(rowIndex, tfTen.getText(), tfLoai.getText(), tfGiaN.getText(), tfGiaB.getText(), tfSoLuong.getText(), tfHanDung.getText());
+                // [CẬP NHẬT] Truyền thêm tfDonVi.getText() vào hàm save
+                handleSave(rowIndex, tfTen.getText(), tfLoai.getText(), tfDonVi.getText(), tfGiaN.getText(), tfGiaB.getText(), tfSoLuong.getText(), tfHanDung.getText());
                 dialog.dispose();
                 loadData();
             } catch (Exception ex) {
@@ -131,7 +135,8 @@ public class ProductFrame extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void handleSave(Integer rowIndex, String ten, String loai, String giaN, String giaB, String soLuongNhap, String hanDungStr) throws SQLException {
+    // [CẬP NHẬT] Thêm tham số donVi vào hàm
+    private void handleSave(Integer rowIndex, String ten, String loai, String donVi, String giaN, String giaB, String soLuongNhap, String hanDungStr) throws SQLException {
         try (Connection con = Database.getConnection()) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
             sdf.setLenient(false);
@@ -154,24 +159,28 @@ public class ProductFrame extends JPanel {
             int iSoLuong = Integer.parseInt(soLuongNhap);
 
             if (rowIndex == null) { // Thêm mới
-                sql = "INSERT INTO SanPham (TenSP, LoaiSP, GiaNhap, GiaBan, HangXuat, TonKho, HanDung) VALUES (?, ?, ?, ?, 0, ?, ?)";
+                // [MỚI] Thêm cột DonVi vào câu lệnh INSERT
+                sql = "INSERT INTO SanPham (TenSP, LoaiSP, DonVi, GiaNhap, GiaBan, HangXuat, TonKho, HanDung) VALUES (?, ?, ?, ?, ?, 0, ?, ?)";
                 ps = con.prepareStatement(sql);
                 ps.setString(1, ten);
                 ps.setString(2, loai);
-                ps.setDouble(3, dGiaNhap);
-                ps.setDouble(4, dGiaBan);
-                ps.setInt(5, iSoLuong);
-                ps.setDate(6, sqlDate);
+                ps.setString(3, donVi); // [MỚI]
+                ps.setDouble(4, dGiaNhap);
+                ps.setDouble(5, dGiaBan);
+                ps.setInt(6, iSoLuong);
+                ps.setDate(7, sqlDate);
             } else { // Sửa
-                sql = "UPDATE SanPham SET TenSP=?, LoaiSP=?, GiaNhap=?, GiaBan=?, TonKho=?, HanDung=? WHERE MaSP=?";
+                // [MỚI] Thêm cột DonVi vào câu lệnh UPDATE
+                sql = "UPDATE SanPham SET TenSP=?, LoaiSP=?, DonVi=?, GiaNhap=?, GiaBan=?, TonKho=?, HanDung=? WHERE MaSP=?";
                 ps = con.prepareStatement(sql);
                 ps.setString(1, ten);
                 ps.setString(2, loai);
-                ps.setDouble(3, dGiaNhap);
-                ps.setDouble(4, dGiaBan);
-                ps.setInt(5, iSoLuong);
-                ps.setDate(6, sqlDate);
-                ps.setInt(7, (int) model.getValueAt(rowIndex, 0));
+                ps.setString(3, donVi); // [MỚI]
+                ps.setDouble(4, dGiaNhap);
+                ps.setDouble(5, dGiaBan);
+                ps.setInt(6, iSoLuong);
+                ps.setDate(7, sqlDate);
+                ps.setInt(8, (int) model.getValueAt(rowIndex, 0));
             }
 
             ps.executeUpdate();
@@ -195,7 +204,6 @@ public class ProductFrame extends JPanel {
                 ps.executeUpdate();
                 loadData();
             } catch (Exception e) {
-                // Xử lý lỗi khóa ngoại nếu sản phẩm đã bán
                 if (e.getMessage().contains("REFERENCE constraint")) {
                     JOptionPane.showMessageDialog(this, "Không thể xóa sản phẩm này vì đã có lịch sử giao dịch!", "Lỗi ràng buộc", JOptionPane.ERROR_MESSAGE);
                 } else {
@@ -210,7 +218,8 @@ public class ProductFrame extends JPanel {
         JPanel pnlTable = new JPanel(new BorderLayout());
         pnlTable.setBackground(Color.WHITE);
 
-        String[] headers = {"Mã SP", "Tên SP", "Loại", "Giá Nhập", "Giá Bán", "Xuất", "Tồn", "Hạn Dùng"};
+        // [CẬP NHẬT] Thêm cột "Đơn Vị" vào headers
+        String[] headers = {"Mã SP", "Tên SP", "Loại", "Đơn Vị", "Giá Nhập", "Giá Bán", "Xuất", "Tồn", "Hạn Dùng"};
         model = new DefaultTableModel(headers, 0);
         tbl = new JTable(model) {
             public boolean isCellEditable(int r, int c) { return false; }
@@ -249,11 +258,13 @@ public class ProductFrame extends JPanel {
 
     private void updateDetailArea() {
         int row = tbl.getSelectedRow();
-        txtNote.setText(String.format("📦 Tên SP: %s\n🏷 Loại: %s\n📊 Tồn: %s\n⏳ Hạn dùng: %s",
+        // [CẬP NHẬT] Hiển thị Đơn vị và cập nhật lại chỉ số cột do có thêm cột mới
+        txtNote.setText(String.format("📦 Tên SP: %s\n🏷 Loại: %s\n💊 Đơn vị: %s\n📊 Tồn: %s\n⏳ Hạn dùng: %s",
                 model.getValueAt(row, 1),
                 model.getValueAt(row, 2),
-                model.getValueAt(row, 6),
-                model.getValueAt(row, 7)));
+                model.getValueAt(row, 3), // Đơn vị
+                model.getValueAt(row, 7), // Tồn kho (dời xuống 7)
+                model.getValueAt(row, 8))); // Hạn dùng (dời xuống 8)
     }
 
     private JButton createStyledButton(String text, Color bg) {
@@ -265,7 +276,6 @@ public class ProductFrame extends JPanel {
         return btn;
     }
 
-    // Nhớ thêm import java.text.DecimalFormat; ở đầu file nếu chưa có
     public void loadData() {
         try (Connection con = Database.getConnection()) {
             if (con == null) return;
@@ -274,14 +284,12 @@ public class ProductFrame extends JPanel {
             ResultSet rs = st.executeQuery("SELECT * FROM SanPham");
 
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            // Thêm bộ định dạng tiền tệ
             java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
 
             while(rs.next()){
                 Date dateSQL = rs.getDate("HanDung");
                 String hienThiNgay = (dateSQL != null) ? sdf.format(dateSQL) : "";
 
-                // Định dạng giá tiền
                 String giaNhapStr = df.format(rs.getDouble("GiaNhap")) + " đ";
                 String giaBanStr = df.format(rs.getDouble("GiaBan")) + " đ";
 
@@ -289,8 +297,9 @@ public class ProductFrame extends JPanel {
                         rs.getInt("MaSP"),
                         rs.getString("TenSP"),
                         rs.getString("LoaiSP"),
-                        giaNhapStr, // Hiển thị chuỗi đã format (Ví dụ: 20,000 đ)
-                        giaBanStr,  // Hiển thị chuỗi đã format
+                        rs.getString("DonVi"), // [MỚI] Lấy đơn vị từ DB
+                        giaNhapStr,
+                        giaBanStr,
                         rs.getInt("HangXuat"),
                         rs.getInt("TonKho"),
                         hienThiNgay
