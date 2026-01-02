@@ -200,6 +200,27 @@ public class POSPanel extends JPanel {
 
             ResultSet rs = pst.executeQuery();
             if (rs.next()) {
+                // --- 1. KIỂM TRA HẠN SỬ DỤNG TRƯỚC ---
+                java.sql.Date hanDung = rs.getDate("HanDung");
+                if (hanDung != null) {
+                    LocalDate expiryDate = hanDung.toLocalDate();
+                    // Nếu ngày hết hạn NHỎ HƠN ngày hôm nay -> Đã hết hạn
+                    if (expiryDate.isBefore(LocalDate.now())) {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+                        JOptionPane.showMessageDialog(this,
+                                "SẢN PHẨM ĐÃ HẾT HẠN!\n" +
+                                        "Hạn dùng: " + sdf.format(hanDung) + "\n" +
+                                        "Vui lòng kiểm tra lại kho hoặc hủy sản phẩm.",
+                                "Cảnh báo hết hạn",
+                                JOptionPane.WARNING_MESSAGE);
+
+                        resetSelection(); // Xóa thông tin đang hiển thị (nếu có)
+                        return; // Dừng hàm ngay lập tức, không cho phép bán
+                    }
+                }
+                // -------------------------------------
+
+                // 2. Nếu còn hạn thì mới hiển thị thông tin để bán
                 currentProductId = rs.getInt("MaSP");
                 String name = rs.getString("TenSP");
                 currentPrice = rs.getDouble("GiaBan");
