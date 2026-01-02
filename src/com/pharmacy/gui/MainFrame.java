@@ -1,6 +1,7 @@
 package com.pharmacy.gui;
 
 import com.pharmacy.service.ThongKeService;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -97,7 +98,17 @@ public class MainFrame extends JFrame {
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.QUESTION_MESSAGE
             );
+// Hiệu ứng Hover cho nút đăng xuất (Giống hệt các nút khác)
+            btn.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    btn.setBackground(COLOR_PRIMARY.brighter());
+                    btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                }
 
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    btn.setBackground(COLOR_SECONDARY);
+                }
+            });
             if (choice == JOptionPane.YES_OPTION) {
                 this.dispose();
                 new LoginFrame().setVisible(true);
