@@ -31,7 +31,7 @@ public class POSPanel extends JPanel {
     private double currentPrice = 0;
     private int currentStock = 0;
     private double finalTotal = 0;
-
+    private java.sql.Date currentExpiryDate = null;
     // --- Styles ---
     private final Color COLOR_PRIMARY = new Color(0, 102, 204);
     private final Color COLOR_SUCCESS = new Color(40, 167, 69);
@@ -200,32 +200,15 @@ public class POSPanel extends JPanel {
 
             ResultSet rs = pst.executeQuery();
             if (rs.next()) {
-                // --- 1. KIỂM TRA HẠN SỬ DỤNG TRƯỚC ---
-                java.sql.Date hanDung = rs.getDate("HanDung");
-                if (hanDung != null) {
-                    LocalDate expiryDate = hanDung.toLocalDate();
-                    // Nếu ngày hết hạn NHỎ HƠN ngày hôm nay -> Đã hết hạn
-                    if (expiryDate.isBefore(LocalDate.now())) {
-                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
-                        JOptionPane.showMessageDialog(this,
-                                "SẢN PHẨM ĐÃ HẾT HẠN!\n" +
-                                        "Hạn dùng: " + sdf.format(hanDung) + "\n" +
-                                        "Vui lòng kiểm tra lại kho hoặc hủy sản phẩm.",
-                                "Cảnh báo hết hạn",
-                                JOptionPane.WARNING_MESSAGE);
-
-                        resetSelection(); // Xóa thông tin đang hiển thị (nếu có)
-                        return; // Dừng hàm ngay lập tức, không cho phép bán
-                    }
-                }
-                // -------------------------------------
-
-                // 2. Nếu còn hạn thì mới hiển thị thông tin để bán
                 currentProductId = rs.getInt("MaSP");
                 String name = rs.getString("TenSP");
                 currentPrice = rs.getDouble("GiaBan");
                 currentStock = rs.getInt("TonKho");
 
+                // [MỚI] Lưu ngày hết hạn vào biến tạm, CHƯA kiểm tra ngay
+                currentExpiryDate = rs.getDate("HanDung");
+
+                // Hiển thị thông tin lên giao diện ngay lập tức
                 lblName.setText("<html><body style='width: 150px'>" + name + "</body></html>");
                 lblPrice.setText(formatMoney(currentPrice) + " đ");
                 lblStock.setText(String.valueOf(currentStock));
@@ -244,6 +227,17 @@ public class POSPanel extends JPanel {
     }
 
     private void addToCart() {
+        if (currentExpiryDate != null) {
+            LocalDate expiry = currentExpiryDate.toLocalDate();
+            if (expiry.isBefore(LocalDate.now())) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+                JOptionPane.showMessageDialog(this,
+                        "KHÔNG THỂ BÁN!\nSản phẩm này đã hết hạn ngày: " + sdf.format(currentExpiryDate),
+                        "Cảnh báo hết hạn",
+                        JOptionPane.WARNING_MESSAGE);
+                return; // Dừng lại, không thêm vào giỏ
+            }
+        }
         int qty = (int) spnQuantity.getValue();
         if (qty > currentStock) {
             JOptionPane.showMessageDialog(this, "Không đủ hàng! Tồn kho chỉ còn: " + currentStock);
