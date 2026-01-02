@@ -31,7 +31,7 @@ public class POSPanel extends JPanel {
     private double currentPrice = 0;
     private int currentStock = 0;
     private double finalTotal = 0;
-
+    private java.sql.Date currentExpiryDate = null;
     // --- Styles ---
     private final Color COLOR_PRIMARY = new Color(0, 102, 204);
     private final Color COLOR_SUCCESS = new Color(40, 167, 69);
@@ -205,6 +205,10 @@ public class POSPanel extends JPanel {
                 currentPrice = rs.getDouble("GiaBan");
                 currentStock = rs.getInt("TonKho");
 
+                // [MỚI] Lưu ngày hết hạn vào biến tạm, CHƯA kiểm tra ngay
+                currentExpiryDate = rs.getDate("HanDung");
+
+                // Hiển thị thông tin lên giao diện ngay lập tức
                 lblName.setText("<html><body style='width: 150px'>" + name + "</body></html>");
                 lblPrice.setText(formatMoney(currentPrice) + " đ");
                 lblStock.setText(String.valueOf(currentStock));
@@ -223,6 +227,17 @@ public class POSPanel extends JPanel {
     }
 
     private void addToCart() {
+        if (currentExpiryDate != null) {
+            LocalDate expiry = currentExpiryDate.toLocalDate();
+            if (expiry.isBefore(LocalDate.now())) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+                JOptionPane.showMessageDialog(this,
+                        "KHÔNG THỂ BÁN!\nSản phẩm này đã hết hạn ngày: " + sdf.format(currentExpiryDate),
+                        "Cảnh báo hết hạn",
+                        JOptionPane.WARNING_MESSAGE);
+                return; // Dừng lại, không thêm vào giỏ
+            }
+        }
         int qty = (int) spnQuantity.getValue();
         if (qty > currentStock) {
             JOptionPane.showMessageDialog(this, "Không đủ hàng! Tồn kho chỉ còn: " + currentStock);
@@ -281,12 +296,28 @@ public class POSPanel extends JPanel {
             PreparedStatement pstCT = con.prepareStatement(sqlCT);
             PreparedStatement pstKho = con.prepareStatement(sqlKho);
 
+            String sqlGetGiaGoc = "SELECT GiaNhap FROM SanPham WHERE MaSP = ?";
+            String sqlLoiNhuan = "INSERT INTO LoiNhuan (MaHD, MaSP, SoLuongXuat, GiaGocSP, GiaBanSP) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pstGetGia = con.prepareStatement(sqlGetGiaGoc);
+            PreparedStatement pstLoiNhuan = con.prepareStatement(sqlLoiNhuan);
             for (int i = 0; i < cartModel.getRowCount(); i++) {
                 int id = (int) cartModel.getValueAt(i, 0);
                 int q = (int) cartModel.getValueAt(i, 3);
-                // Fix lỗi parse tiền khi số lớn (> 1 triệu)
                 double p = Double.parseDouble(cartModel.getValueAt(i, 2).toString().replaceAll("[^0-9]", ""));
                 double sub = Double.parseDouble(cartModel.getValueAt(i, 4).toString().replaceAll("[^0-9]", ""));
+
+                double giaNhap = 0;
+                pstGetGia.setInt(1, id);
+                ResultSet rsGia = pstGetGia.executeQuery();
+                if(rsGia.next()) giaNhap = rsGia.getDouble("GiaNhap");
+                rsGia.close();
+
+                pstLoiNhuan.setInt(1, maHD);
+                pstLoiNhuan.setInt(2, id);
+                pstLoiNhuan.setInt(3, q);
+                pstLoiNhuan.setDouble(4, giaNhap); // Lưu giá nhập thực tế (ví dụ 100đ)
+                pstLoiNhuan.setDouble(5, p);       // Lưu giá bán (ví dụ 30,000đ)
+                pstLoiNhuan.addBatch();
 
                 pstCT.setInt(1, maHD); pstCT.setInt(2, id); pstCT.setInt(3, q); pstCT.setDouble(4, p); pstCT.setDouble(5, sub);
                 pstCT.addBatch();
@@ -294,7 +325,11 @@ public class POSPanel extends JPanel {
                 pstKho.setInt(1, q); pstKho.setInt(2, q); pstKho.setInt(3, id);
                 pstKho.addBatch();
             }
-            pstCT.executeBatch(); pstKho.executeBatch();
+
+// Thực thi tất cả
+            pstLoiNhuan.executeBatch(); // Chạy lệnh lưu lợi nhuận
+            pstCT.executeBatch();
+            pstKho.executeBatch();
             con.commit();
             JOptionPane.showMessageDialog(this, "Thanh toán thành công!");
             cartModel.setRowCount(0);

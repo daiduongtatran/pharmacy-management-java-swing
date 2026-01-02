@@ -1,3 +1,4 @@
+
 package com.pharmacy.connectdb;
 
 import java.sql.Connection;
@@ -13,9 +14,8 @@ public class Database {
     }
 
     public void connect() {
-        // Thay đổi thông tin phù hợp với DB của bạn (SQL Server/MySQL)
         String url = "jdbc:sqlserver://localhost;"
-                + "databaseName=Qlynhathuoc;"
+                + "databaseName=Quanlynhathuoc;"
                 + "integratedSecurity=true;"
                 + "trustServerCertificate=true";
         try {

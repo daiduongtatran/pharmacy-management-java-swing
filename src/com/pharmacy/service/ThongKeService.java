@@ -33,22 +33,7 @@ public class ThongKeService {
         } catch (Exception e) { e.printStackTrace(); }
         return count;
     }
-
-    // 3. Lấy danh sách chi tiết hóa đơn (Hiển thị ReportPanel)
-    public ResultSet getDanhSachHoaDon() {
-        try {
-            Connection con = Database.getConnection();
-            String sql = "SELECT MaHD, NgayInHoaDon, TongTien, MaKH FROM HoaDon ORDER BY MaHD DESC";
-            PreparedStatement pst = con.prepareStatement(sql);
-            return pst.executeQuery();
-            // Lưu ý: Người gọi hàm này phải chịu trách nhiệm đóng Connection/ResultSet sau khi dùng
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // 4. Lấy danh sách thuốc (Cho Dashboard hiện tại)
+    // 3. Lấy danh sách thuốc (Cho Dashboard hiện tại)
     public ResultSet getDanhSachThuoc() {
         try {
             Connection con = Database.getConnection();
