@@ -101,10 +101,12 @@ public class ReportPanel extends JPanel {
 
         try (Connection con = Database.getConnection()) {
             // 1. SQL: Lấy thông tin hóa đơn và gộp tên thuốc
+            // Sửa câu SQL để lấy thêm cột TongLoiNhuan
             String sql = "SELECT h.MaHD, h.NgayInHoaDon, h.TongTien, " +
                     "(SELECT s.TenSP + ', ' FROM ChiTietHoaDon ct JOIN SanPham s ON ct.MaSP = s.MaSP " +
                     " WHERE ct.MaHD = h.MaHD FOR XML PATH('')) as DSTen, " +
-                    "(SELECT SUM(SoLuong) FROM ChiTietHoaDon WHERE MaHD = h.MaHD) as TongSL " +
+                    "(SELECT SUM(SoLuong) FROM ChiTietHoaDon WHERE MaHD = h.MaHD) as TongSL, " +
+                    "(SELECT SUM(BienLoiNhuan) FROM LoiNhuan WHERE MaHD = h.MaHD) as LoiNhuanThucTe " +
                     "FROM HoaDon h ORDER BY h.MaHD DESC";
 
             ResultSet rs = con.createStatement().executeQuery(sql);
@@ -118,7 +120,7 @@ public class ReportPanel extends JPanel {
 
             while (rs.next()) {
                 double rev = rs.getDouble("TongTien");
-                double prf = rev * 0.3;
+                double prf = rs.getDouble("LoiNhuanThucTe");
                 int tongSL = rs.getInt("TongSL");
 
                 // 2. Xử lý xóa dấu phẩy thừa ở cuối danh sách thay vì dùng <br>

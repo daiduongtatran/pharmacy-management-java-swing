@@ -7,12 +7,13 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ProductFrame extends JPanel {
     private JTable tbl;
     private DefaultTableModel model;
     private JTextArea txtNote;
-    private JTextField txtSearch;
 
     private final Color COLOR_PRIMARY = new Color(0, 102, 204);
     private final Color COLOR_BG = new Color(245, 245, 245);
@@ -31,26 +32,14 @@ public class ProductFrame extends JPanel {
         JPanel pnlTop = new JPanel(new BorderLayout());
         pnlTop.setOpaque(false);
 
-        // Tìm kiếm
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlSearch.setOpaque(false);
-        txtSearch = new JTextField(25);
-        txtSearch.setPreferredSize(new Dimension(0, 35));
-        JButton btnSearch = new JButton("Tìm kiếm");
-        btnSearch.setPreferredSize(new Dimension(100, 35));
-
-        pnlSearch.add(new JLabel("🔍 "));
-        pnlSearch.add(txtSearch);
-        pnlSearch.add(btnSearch);
-
-        // Nút chức năng
+        // Nút chức năng (Nằm bên phải)
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlActions.setOpaque(false);
 
-        JButton btnAdd = createStyledButton("Thêm mới", new Color(40, 167, 69));
+        JButton btnAdd = createStyledButton("Nhập hàng", new Color(40, 167, 69));
         JButton btnEdit = createStyledButton("Sửa", new Color(255, 193, 7));
         JButton btnDelete = createStyledButton("Xóa", new Color(220, 53, 69));
-        JButton btnRefresh = createStyledButton("Làm mới", COLOR_PRIMARY);
+        // Đã xóa nút Làm mới
 
         // Gán sự kiện CRUD
         btnAdd.addActionListener(e -> openProductDialog(null));
@@ -63,21 +52,21 @@ public class ProductFrame extends JPanel {
             }
         });
         btnDelete.addActionListener(e -> handleDelete());
-        btnRefresh.addActionListener(e -> loadData());
 
+        // Thêm nút vào Panel
         pnlActions.add(btnAdd);
         pnlActions.add(btnEdit);
         pnlActions.add(btnDelete);
-        pnlActions.add(btnRefresh);
 
-        pnlTop.add(pnlSearch, BorderLayout.WEST);
+        // Chỉ add panel Actions vào bên phải (EAST), bên trái để trống
         pnlTop.add(pnlActions, BorderLayout.EAST);
+
         return pnlTop;
     }
 
     // --- BẢNG MINI (DIALOG) ĐỂ NHẬP LIỆU ---
     private void openProductDialog(Integer rowIndex) {
-        String title = (rowIndex == null) ? "Thêm Sản Phẩm" : "Sửa Sản Phẩm";
+        String title = (rowIndex == null) ? "Thêm Sản Phẩm Mới" : "Sửa Thông Tin Sản Phẩm";
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), title, true);
         dialog.setLayout(new BorderLayout(10, 10));
 
@@ -88,24 +77,31 @@ public class ProductFrame extends JPanel {
         JTextField tfLoai = new JTextField();
         JTextField tfGiaN = new JTextField();
         JTextField tfGiaB = new JTextField();
-        JTextField tfHangX = new JTextField();
-        JTextField tfTon = new JTextField();
+        JTextField tfSoLuong = new JTextField();
+        JTextField tfHanDung = new JTextField();
 
         pnlInputs.add(new JLabel("Tên sản phẩm:")); pnlInputs.add(tfTen);
         pnlInputs.add(new JLabel("Loại sản phẩm:")); pnlInputs.add(tfLoai);
         pnlInputs.add(new JLabel("Giá nhập:")); pnlInputs.add(tfGiaN);
         pnlInputs.add(new JLabel("Giá bán:")); pnlInputs.add(tfGiaB);
-        pnlInputs.add(new JLabel("Hàng xuất:")); pnlInputs.add(tfHangX);
-        pnlInputs.add(new JLabel("Tồn kho:")); pnlInputs.add(tfTon);
+        pnlInputs.add(new JLabel("Số lượng nhập:")); pnlInputs.add(tfSoLuong);
+        pnlInputs.add(new JLabel("Hạn dùng (ngày/tháng/năm):")); pnlInputs.add(tfHanDung);
 
         // Nếu là sửa, đổ dữ liệu cũ vào các ô text
         if (rowIndex != null) {
             tfTen.setText(model.getValueAt(rowIndex, 1).toString());
             tfLoai.setText(model.getValueAt(rowIndex, 2).toString());
-            tfGiaN.setText(model.getValueAt(rowIndex, 3).toString());
-            tfGiaB.setText(model.getValueAt(rowIndex, 4).toString());
-            tfHangX.setText(model.getValueAt(rowIndex, 5).toString());
-            tfTon.setText(model.getValueAt(rowIndex, 6).toString());
+
+            // --- XỬ LÝ QUAN TRỌNG: Lọc bỏ chữ "đ" và dấu "," để lấy số nguyên ---
+            String giaNhapRaw = model.getValueAt(rowIndex, 3).toString().replaceAll("[^0-9]", "");
+            String giaBanRaw = model.getValueAt(rowIndex, 4).toString().replaceAll("[^0-9]", "");
+
+            tfGiaN.setText(giaNhapRaw);
+            tfGiaB.setText(giaBanRaw);
+            // ---------------------------------------------------------------------
+
+            tfSoLuong.setText(model.getValueAt(rowIndex, 6).toString());
+            tfHanDung.setText(model.getValueAt(rowIndex, 7).toString());
         }
 
         JButton btnSave = new JButton("Lưu dữ liệu");
@@ -115,11 +111,16 @@ public class ProductFrame extends JPanel {
 
         btnSave.addActionListener(e -> {
             try {
-                handleSave(rowIndex, tfTen.getText(), tfLoai.getText(), tfGiaN.getText(), tfGiaB.getText(), tfHangX.getText(), tfTon.getText());
+                if(tfTen.getText().isEmpty() || tfSoLuong.getText().isEmpty() || tfHanDung.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đầy đủ thông tin (Tên, SL, Hạn dùng)!");
+                    return;
+                }
+
+                handleSave(rowIndex, tfTen.getText(), tfLoai.getText(), tfGiaN.getText(), tfGiaB.getText(), tfSoLuong.getText(), tfHanDung.getText());
                 dialog.dispose();
-                loadData(); // Cập nhật lại bảng chính
+                loadData();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Lỗi: " + ex.getMessage());
+                JOptionPane.showMessageDialog(dialog, "Lỗi nhập liệu: " + ex.getMessage());
             }
         });
 
@@ -130,25 +131,47 @@ public class ProductFrame extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void handleSave(Integer rowIndex, String ten, String loai, String giaN, String giaB, String hangX, String ton) throws SQLException {
+    private void handleSave(Integer rowIndex, String ten, String loai, String giaN, String giaB, String soLuongNhap, String hanDungStr) throws SQLException {
         try (Connection con = Database.getConnection()) {
-            String sql;
-            if (rowIndex == null) { // Thêm mới
-                sql = "INSERT INTO SanPham (TenSP, LoaiSP, GiaNhap, GiaBan, HangXuat, TonKho) VALUES (?, ?, ?, ?, ?, ?)";
-            } else { // Sửa
-                sql = "UPDATE SanPham SET TenSP=?, LoaiSP=?, GiaNhap=?, GiaBan=?, HangXuat=?, TonKho=? WHERE MaSP=?";
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            sdf.setLenient(false);
+
+            long ms;
+            try {
+                java.util.Date dateUtil = sdf.parse(hanDungStr);
+                ms = dateUtil.getTime();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Ngày hết hạn không hợp lệ!\nVui lòng nhập đúng định dạng: ngày/tháng/năm (VD: 31/12/2025)");
+                return;
             }
+            java.sql.Date sqlDate = new java.sql.Date(ms);
 
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, ten);
-            ps.setString(2, loai);
-            ps.setDouble(3, Double.parseDouble(giaN));
-            ps.setDouble(4, Double.parseDouble(giaB));
-            ps.setInt(5, Integer.parseInt(hangX));
-            ps.setInt(6, Integer.parseInt(ton));
+            String sql;
+            PreparedStatement ps;
 
-            if (rowIndex != null) {
-                ps.setInt(7, (int) model.getValueAt(rowIndex, 0)); // Lấy MaSP từ cột 0
+            double dGiaNhap = Double.parseDouble(giaN);
+            double dGiaBan = Double.parseDouble(giaB);
+            int iSoLuong = Integer.parseInt(soLuongNhap);
+
+            if (rowIndex == null) { // Thêm mới
+                sql = "INSERT INTO SanPham (TenSP, LoaiSP, GiaNhap, GiaBan, HangXuat, TonKho, HanDung) VALUES (?, ?, ?, ?, 0, ?, ?)";
+                ps = con.prepareStatement(sql);
+                ps.setString(1, ten);
+                ps.setString(2, loai);
+                ps.setDouble(3, dGiaNhap);
+                ps.setDouble(4, dGiaBan);
+                ps.setInt(5, iSoLuong);
+                ps.setDate(6, sqlDate);
+            } else { // Sửa
+                sql = "UPDATE SanPham SET TenSP=?, LoaiSP=?, GiaNhap=?, GiaBan=?, TonKho=?, HanDung=? WHERE MaSP=?";
+                ps = con.prepareStatement(sql);
+                ps.setString(1, ten);
+                ps.setString(2, loai);
+                ps.setDouble(3, dGiaNhap);
+                ps.setDouble(4, dGiaBan);
+                ps.setInt(5, iSoLuong);
+                ps.setDate(6, sqlDate);
+                ps.setInt(7, (int) model.getValueAt(rowIndex, 0));
             }
 
             ps.executeUpdate();
@@ -172,16 +195,22 @@ public class ProductFrame extends JPanel {
                 ps.executeUpdate();
                 loadData();
             } catch (Exception e) {
-                e.printStackTrace();
+                // Xử lý lỗi khóa ngoại nếu sản phẩm đã bán
+                if (e.getMessage().contains("REFERENCE constraint")) {
+                    JOptionPane.showMessageDialog(this, "Không thể xóa sản phẩm này vì đã có lịch sử giao dịch!", "Lỗi ràng buộc", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
-    // --- CÁC PHƯƠNG THỨC GIAO DIỆN BẢNG (GIỮ NGUYÊN TỪ FILE CŨ) ---
+    // --- CÁC PHƯƠNG THỨC GIAO DIỆN BẢNG ---
     private JPanel createTablePanel() {
         JPanel pnlTable = new JPanel(new BorderLayout());
         pnlTable.setBackground(Color.WHITE);
-        String[] headers = {"Mã SP", "Tên SP", "Loại", "Giá Nhập", "Giá Bán", "Xuất", "Tồn"};
+
+        String[] headers = {"Mã SP", "Tên SP", "Loại", "Giá Nhập", "Giá Bán", "Xuất", "Tồn", "Hạn Dùng"};
         model = new DefaultTableModel(headers, 0);
         tbl = new JTable(model) {
             public boolean isCellEditable(int r, int c) { return false; }
@@ -195,6 +224,7 @@ public class ProductFrame extends JPanel {
         tbl.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && tbl.getSelectedRow() != -1) updateDetailArea();
         });
+
         loadData();
         pnlTable.add(new JScrollPane(tbl), BorderLayout.CENTER);
         return pnlTable;
@@ -219,8 +249,11 @@ public class ProductFrame extends JPanel {
 
     private void updateDetailArea() {
         int row = tbl.getSelectedRow();
-        txtNote.setText(String.format("📦 Tên SP: %s\n🏷 Loại: %s\n📊 Tồn: %s",
-                model.getValueAt(row, 1), model.getValueAt(row, 2), model.getValueAt(row, 6)));
+        txtNote.setText(String.format("📦 Tên SP: %s\n🏷 Loại: %s\n📊 Tồn: %s\n⏳ Hạn dùng: %s",
+                model.getValueAt(row, 1),
+                model.getValueAt(row, 2),
+                model.getValueAt(row, 6),
+                model.getValueAt(row, 7)));
     }
 
     private JButton createStyledButton(String text, Color bg) {
@@ -232,14 +265,36 @@ public class ProductFrame extends JPanel {
         return btn;
     }
 
+    // Nhớ thêm import java.text.DecimalFormat; ở đầu file nếu chưa có
     public void loadData() {
         try (Connection con = Database.getConnection()) {
             if (con == null) return;
             model.setRowCount(0);
             Statement st = con.createStatement();
             ResultSet rs = st.executeQuery("SELECT * FROM SanPham");
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            // Thêm bộ định dạng tiền tệ
+            java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
+
             while(rs.next()){
-                model.addRow(new Object[]{rs.getInt("MaSP"), rs.getString("TenSP"), rs.getString("LoaiSP"), rs.getDouble("GiaNhap"), rs.getDouble("GiaBan"), rs.getInt("HangXuat"), rs.getInt("TonKho")});
+                Date dateSQL = rs.getDate("HanDung");
+                String hienThiNgay = (dateSQL != null) ? sdf.format(dateSQL) : "";
+
+                // Định dạng giá tiền
+                String giaNhapStr = df.format(rs.getDouble("GiaNhap")) + " đ";
+                String giaBanStr = df.format(rs.getDouble("GiaBan")) + " đ";
+
+                model.addRow(new Object[]{
+                        rs.getInt("MaSP"),
+                        rs.getString("TenSP"),
+                        rs.getString("LoaiSP"),
+                        giaNhapStr, // Hiển thị chuỗi đã format (Ví dụ: 20,000 đ)
+                        giaBanStr,  // Hiển thị chuỗi đã format
+                        rs.getInt("HangXuat"),
+                        rs.getInt("TonKho"),
+                        hienThiNgay
+                });
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
