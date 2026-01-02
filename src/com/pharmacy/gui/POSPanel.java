@@ -315,7 +315,6 @@ public class POSPanel extends JPanel {
             pstLoiNhuan.executeBatch(); // Chạy lệnh lưu lợi nhuận
             pstCT.executeBatch();
             pstKho.executeBatch();
-            pstCT.executeBatch(); pstKho.executeBatch();
             con.commit();
             JOptionPane.showMessageDialog(this, "Thanh toán thành công!");
             cartModel.setRowCount(0);

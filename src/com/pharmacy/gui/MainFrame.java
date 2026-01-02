@@ -53,19 +53,6 @@ public class MainFrame extends JFrame {
         loadDataFromDB();
     }
 
-    private ImageIcon getUtilIcon(String fileName) {
-        try {
-            java.net.URL imgURL = getClass().getResource("/com/pharmacy/util/" + fileName);
-            if (imgURL != null) {
-                Image img = new ImageIcon(imgURL).getImage();
-                return new ImageIcon(img.getScaledInstance(22, 22, Image.SCALE_SMOOTH));
-            }
-        } catch (Exception e) {
-            System.err.println("Không tìm thấy icon: " + fileName);
-        }
-        return null;
-    }
-
     private void initUI() {
         setTitle("Quản Lý Nhà Thuốc");
         setSize(1200, 750);

@@ -71,10 +71,7 @@ public class LoginFrame extends JFrame {
 
                     dispose(); // Đóng cửa sổ đăng nhập
 
-                    // Mở MainFrame
-                    java.awt.EventQueue.invokeLater(() -> {
-                        new MainFrame().setVisible(true);
-                    });
+                    new MainFrame().setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(null, "Sai tài khoản hoặc mật khẩu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
