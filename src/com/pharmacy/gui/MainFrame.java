@@ -310,7 +310,13 @@ public class MainFrame extends JFrame {
 
     private JScrollPane createStyledTable() {
         String[] columns = {"Mã SP", "Tên Thuốc", "Loại", "Đơn Vị", "Tồn Kho", "Hạn Dùng", "Trạng Thái"};
-        tableModel = new DefaultTableModel(columns, 0);
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
         tblThuoc = new JTable(tableModel);
         tblThuoc.setRowHeight(30);
         tblThuoc.setFont(FONT_MAIN);
