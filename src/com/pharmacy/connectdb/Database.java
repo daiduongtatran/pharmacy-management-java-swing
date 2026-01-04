@@ -36,14 +36,4 @@ public class Database {
         }
         return con;
     }
-
-    public void disconnect() {
-        if (con != null) {
-            try {
-                con.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }
