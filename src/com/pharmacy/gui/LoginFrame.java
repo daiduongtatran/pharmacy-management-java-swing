@@ -7,8 +7,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class LoginFrame extends JFrame {
-
-    // CHỖ SỬA 1: Khai báo biến service ở đây (Cấp độ Class)
     private AuthService authService = new AuthService();
 
     public LoginFrame() {

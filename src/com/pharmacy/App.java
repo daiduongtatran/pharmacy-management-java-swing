@@ -1,8 +1,9 @@
 package com.pharmacy;
 
-import com.pharmacy.gui.LoginFrame;
 import com.pharmacy.connectdb.Database;
-import javax.swing.JOptionPane;
+import com.pharmacy.gui.LoginFrame;
+
+import javax.swing.*;
 
 public class App {
     public static void main(String[] args) {
