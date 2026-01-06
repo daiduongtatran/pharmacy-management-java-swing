@@ -30,13 +30,12 @@ public class ReportPanel extends JPanel {
         lblProfit = new JLabel("0 đ");
         lblOrders = new JLabel("0");
 
-        pnlTop.add(createCard("TỔNG DOANH THU", lblRevenue, COLOR_PRIMARY));
-        pnlTop.add(createCard("LỢI NHUẬN ", lblProfit, new Color(40, 167, 69)));
-        pnlTop.add(createCard("TỔNG ĐƠN HÀNG", lblOrders, new Color(255, 153, 0)));
+        pnlTop.add(createCard("TỔNG DOANH THU", lblRevenue, COLOR_PRIMARY, "💰"));
+        pnlTop.add(createCard("LỢI NHUẬN ", lblProfit, new Color(40, 167, 69),"💵"));
+        pnlTop.add(createCard("TỔNG ĐƠN HÀNG", lblOrders, new Color(255, 153, 0),"🧾"));
         add(pnlTop, BorderLayout.NORTH);
 
         // --- 2. Table Section (Hiển thị chi tiết từng sản phẩm) ---
-        // Thêm cột "Đơn giá" để báo cáo chi tiết hơn
         String[] headers = {"Mã HĐ", "Ngày Lập", "Sản phẩm lẻ", "Số lượng", "Mã KH", "Thành Tiền", "Lợi Nhuận"};
         modelHoaDon = new DefaultTableModel(headers, 0) {
             @Override
@@ -44,8 +43,7 @@ public class ReportPanel extends JPanel {
         };
 
         tblHoaDon = new JTable(modelHoaDon);
-        tblHoaDon.setRowHeight(40); // Giảm chiều cao dòng vì không cần xuống dòng HTML nữa
-
+        tblHoaDon.setRowHeight(40); // Giảm chiều cao dòng
         // Định dạng căn lề
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -61,29 +59,41 @@ public class ReportPanel extends JPanel {
         scroll.getViewport().setBackground(Color.WHITE);
         pnlTable.add(scroll, BorderLayout.CENTER);
 
-        // ĐÃ XÓA NÚT LÀM MỚI Ở ĐÂY
-
         add(pnlTable, BorderLayout.CENTER);
         loadData();
     }
 
-    private JPanel createCard(String title, JLabel lblValue, Color c) {
-        JPanel card = new JPanel(new BorderLayout());
+    private JPanel createCard(String title, JLabel lblValue, Color c, String iconEmoji) {
+        JPanel card = new JPanel(new BorderLayout(10, 0));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 6, 0, 0, c),
+                BorderFactory.createMatteBorder(0, 6, 0, 0, c), // Đường kẻ màu bên trái
                 new EmptyBorder(15, 20, 15, 20)
         ));
 
+        // 1. Tiêu đề nhỏ
         JLabel t = new JLabel(title);
         t.setFont(new Font("Arial", Font.BOLD, 12));
         t.setForeground(Color.GRAY);
 
+        // 2. Phần nội dung chứa Số tiền và Icon
+        JPanel pnlContent = new JPanel(new BorderLayout());
+        pnlContent.setOpaque(false);
+
+        // -- Số tiền (Bên trái)
         lblValue.setFont(new Font("Arial", Font.BOLD, 24));
         lblValue.setForeground(new Color(50, 50, 50));
+        pnlContent.add(lblValue, BorderLayout.WEST);
 
+        // -- Icon Emoji (Bên phải)
+        JLabel lblIcon = new JLabel(iconEmoji);
+        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        pnlContent.add(lblIcon, BorderLayout.EAST);
+
+        // 3. Đưa tất cả vào Card
         card.add(t, BorderLayout.NORTH);
-        card.add(lblValue, BorderLayout.CENTER);
+        card.add(pnlContent, BorderLayout.CENTER);
+
         return card;
     }
 
@@ -95,7 +105,7 @@ public class ReportPanel extends JPanel {
         int totalOrdersCount = 0;
         int lastMaHD = -1; // Biến phụ để đếm đúng số lượng đơn hàng
 
-        // SQL JOIN: Lấy trực tiếp từng dòng sản phẩm từ bảng chi tiết
+        // Lấy trực tiếp từng dòng sản phẩm từ bảng chi tiết
         String sql = "SELECT h.MaHD, h.NgayInHoaDon, s.TenSP, ct.SoLuong, ct.ThanhTien, " +
                 " (ct.ThanhTien - (s.GiaNhap * ct.SoLuong)) as LoiNhuanDong " +
                 " FROM HoaDon h " +

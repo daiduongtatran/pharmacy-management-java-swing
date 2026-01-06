@@ -46,7 +46,7 @@ public class POSPanel extends JPanel {
         add(createSelectionPanel(), BorderLayout.WEST);
         add(createCartPanel(), BorderLayout.CENTER);
     }
-
+// xử lí sự kiện nut tìm kiếm
     private JPanel createSelectionPanel() {
         JPanel pnlLeft = new JPanel(new BorderLayout());
         pnlLeft.setPreferredSize(new Dimension(320, 0));
@@ -81,7 +81,7 @@ public class POSPanel extends JPanel {
         lblName = new JLabel("---");
         lblPrice = new JLabel("0 đ");
         lblStock = new JLabel("0");
-        spnQuantity = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        spnQuantity = new JSpinner(new SpinnerNumberModel(1, 1, 10000, 1));
 
         pnlInfo.add(new JLabel("Tên thuốc:")); pnlInfo.add(lblName);
         pnlInfo.add(new JLabel("Đơn giá:"));   pnlInfo.add(lblPrice);
